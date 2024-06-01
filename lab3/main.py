@@ -1,26 +1,27 @@
-'''
-через tableView или виджет список фильмов(название и тд - жанр словом)
-когда шёлкаешь 2 раза должно открыться окно для редактирования сведения о фильме
-название, жанр(раскрывающийся список со стрелкой вниз), год выпуска и тд
-кнопки ОК и ОТМЕНА
-UPDATE films
-SET title = '...', year = '...', genre = '...'
-WHERE id = 54781
-'''
-from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtWidgets import (QApplication, QWidget, QTableView, QVBoxLayout,
+                             QDialog, QLineEdit, QComboBox, QSpinBox, QPushButton,
+                             QFormLayout, QDialogButtonBox)
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery, QSqlQueryModel
-from dialog import *
+from PyQt5 import uic
 
 
 class MainForm(QWidget):
     def __init__(self):
         super().__init__()
-        uic.loadUi("QtWidget.ui", self)
-        self.db = QSqlDatabase('QSQLITE')
+        uic.loadUi("QtWidget.ui", self)  # Ensure you have a valid QtWidget.ui file
+        self.db = QSqlDatabase.addDatabase('QSQLITE')
         self.db.setDatabaseName('films_db.sqlite')
         self.db.open()
 
         self.mainModel = QSqlQueryModel()
+        self.updateModel()
+
+        self.tableView.setModel(self.mainModel)
+        self.tableView.setColumnHidden(0, True)  # Hide the ID column
+        self.tableView.resizeColumnsToContents()
+        self.tableView.doubleClicked.connect(self.doubleClick)
+
+    def updateModel(self):
         query_string = """SELECT
             f.id,
             f.title AS [Название],
@@ -31,57 +32,93 @@ class MainForm(QWidget):
         JOIN genres g on f.genre = g.id;"""
         self.mainModel.setQuery(query_string, self.db)
 
-        self.tableView.setModel(self.mainModel)
-        self.tableView.setColumnHidden(0, True)
-        self.tableView.resizeColumnsToContents()
-        self.tableView.doubleClicked.connect(self.doubleClick)
-
-    def doubleClick(self, table):
-        dialog = DialogForm()
-        result = dialog.exec()
-
-        if result == QDialog.Accepted:
-            title = dialog.titleEdit.text()
-            year = dialog.yearEdit.text()
-            duration = dialog.durationEdit.text()
-
-            errors = {
-                "Error in film title": not title,
-                "Error in film year": not year.isdigit(),
-                "Error in film duration": not duration.isdigit(),
-            }
-
-            for error_message, condition in errors.items():
-                if condition:
-                    print(error_message)
-                    return
-
-            genre = dialog.genreBox.currentText()
-
-            update_query = f"""UPDATE films
-                SET title = '{title}',
-                year = {int(year)},
-                genre = (SELECT id FROM genres WHERE title = '{genre}'),
-                duration = {int(duration)}
-            WHERE id = {int(table.sibling(table.row(), 0).data())};"""
-
-            query = QSqlQuery(self.db)
-            if query.exec_(update_query):
-                # self.db.commit()
-                query_string = """SELECT
-                    f.id,
-                    f.title AS [Название],
-                    g.title AS [Жанр],
-                    f.year AS [Год выпуска],
-                    f.duration AS [Длительность]
-                FROM films f 
-                JOIN genres g on f.genre = g.id;"""
-                self.mainModel.setQuery(query_string, self.db)
-            else:
-                print(query.lastError().text())
+    def doubleClick(self, index):
+        film_id = self.mainModel.data(self.mainModel.index(index.row(), 0))
+        dialog = DialogForm(film_id, self.db)
+        if dialog.exec() == QDialog.Accepted:
+            self.updateModel()
 
 
-app = QApplication([])
-window = MainForm()
-window.show()
-app.exec()
+class DialogForm(QDialog):
+    def __init__(self, film_id, db):
+        super().__init__()
+        self.film_id = film_id
+        self.db = db
+
+        self.setWindowTitle("Edit Film")
+        self.resize(400, 200)
+
+        self.titleEdit = QLineEdit()
+        self.genreBox = QComboBox()
+        self.yearEdit = QSpinBox()
+        self.yearEdit.setRange(1888, 2100)
+        self.durationEdit = QSpinBox()
+        self.durationEdit.setRange(1, 1000)
+
+        self.loadGenres()
+        self.loadFilmData()
+
+        formLayout = QFormLayout()
+        formLayout.addRow("Название:", self.titleEdit)
+        formLayout.addRow("Жанр:", self.genreBox)
+        formLayout.addRow("Год выпуска:", self.yearEdit)
+        formLayout.addRow("Длительность:", self.durationEdit)
+
+        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+
+        layout = QVBoxLayout()
+        layout.addLayout(formLayout)
+        layout.addWidget(self.buttons)
+        self.setLayout(layout)
+
+    def loadGenres(self):
+        query = QSqlQuery("SELECT title FROM genres", self.db)
+        while query.next():
+            self.genreBox.addItem(query.value(0))
+
+    def loadFilmData(self):
+        query = QSqlQuery(f"SELECT title, year, genre, duration FROM films WHERE id = {self.film_id}", self.db)
+        if query.next():
+            self.titleEdit.setText(query.value(0))
+            self.yearEdit.setValue(query.value(1))
+            genre_id = query.value(2)
+            self.durationEdit.setValue(query.value(3))
+
+            genre_query = QSqlQuery(f"SELECT title FROM genres WHERE id = {genre_id}", self.db)
+            if genre_query.next():
+                genre_title = genre_query.value(0)
+                self.genreBox.setCurrentText(genre_title)
+
+    def accept(self):
+        title = self.titleEdit.text()
+        year = self.yearEdit.value()
+        duration = self.durationEdit.value()
+        genre = self.genreBox.currentText()
+
+        if not title or not genre:
+            print("Error: All fields must be filled.")
+            return
+
+        query = QSqlQuery(self.db)
+        query.prepare("""UPDATE films
+                         SET title = ?, year = ?, genre = (SELECT id FROM genres WHERE title = ?), duration = ?
+                         WHERE id = ?""")
+        query.addBindValue(title)
+        query.addBindValue(year)
+        query.addBindValue(genre)
+        query.addBindValue(duration)
+        query.addBindValue(self.film_id)
+
+        if not query.exec():
+            print("Error:", query.lastError().text())
+        else:
+            super().accept()
+
+
+if __name__ == '__main__':
+    app = QApplication([])
+    window = MainForm()
+    window.show()
+    app.exec()
