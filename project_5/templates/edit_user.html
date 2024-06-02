@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Редактирование пользователя</title>
+</head>
+<body>
+<h1>Редактирование данных пользователя</h1>
+<form action="/edit-user/{{ user.id }}" method="post" enctype="multipart/form-data">
+    <fieldset>
+        <legend>Данные пользователя</legend>
+        <label for="text-1">Имя:</label><br><input type="text" id="text-1" name="name" value="{{ user.first_name }}" required>
+        <br>
+        <label for="text-2">Фамилия:</label><br><input type="text" id="text-2" name="surname" value="{{ user.last_name }}" required>
+        <br>
+        <label for="email-1">Почта:</label><br><input type="email" id="email-1" name="email" value="{{ user.email }}" required>
+        <br>
+        <label for="text-4">Имя пользователя:</label><br><input type="text" id="text-4" name="username" value="{{ user.username }}" required>
+        <br>
+        <label for="password-1">Пароль:</label><br><input type="password" id="password-1" name="pwd" value="{{ user.password }}" required>
+    </fieldset>
+
+    <br>
+
+    <input type="submit" value="Сохранить изменения"><input type="reset" value="Отмена">
+
+</form>
+</body>
+</html>
