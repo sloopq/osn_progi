@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Результаты</title>
+</head>
+<body>
+<h1>Результаты голосования</h1>
+<h2>Вы любите маму?</h2>
+<p>
+    <b>Да</b> {{ answers['mommy']['yes'] }} <br>
+    <b>Нет</b> {{ answers['mommy']['no'] }} <br>
+    <b>Не уверен</b> {{ answers['mommy']['not-sure'] }}<br>
+</p>
+<h2>Вы любите папу?</h2>
+<p>
+    <b>Да</b> {{ answers['daddy']['yes'] }} <br>
+    <b>Нет</b> {{ answers['daddy']['no'] }} <br>
+    <b>Не уверен</b> {{ answers['daddy']['not-sure'] }}<br>
+</p>
+<a href="/change_answers">Изменить ответы</a>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Questions</title>
+</head>
+<body>
+    <form action="/results" method="POST">
+        <fieldset>
+            <legend>Вы любите маму?</legend>
+            <label><input type="radio" name="mommy" value="yes"> Да</label>
+            <label><input type="radio" name="mommy" value="no"> Нет</label>
+            <label><input type="radio" name="mommy" value="not-sure"> Не уверен</label>
+        </fieldset>
+        <fieldset>
+            <legend>Вы любите папу?</legend>
+            <label><input type="radio" name="daddy" value="yes"> Да</label>
+            <label><input type="radio" name="daddy" value="no"> Нет</label>
+            <label><input type="radio" name="daddy" value="not-sure"> Не уверен</label>
+        </fieldset>
+        <button type="submit">Отправить</button>
+    </form>
+</body>
+</html>

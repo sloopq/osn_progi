@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Results</title>
+</head>
+<body>
+    <h1>Results</h1>
+    <p>Mommy:</p>
+    <ul>
+        <li>Yes: {{ answers['mommy']['yes'] }}</li>
+        <li>No: {{ answers['mommy']['no'] }}</li>
+        <li>Not sure: {{ answers['mommy']['not-sure'] }}</li>
+    </ul>
+
+    <p>Daddy:</p>
+    <ul>
+        <li>Yes: {{ answers['daddy']['yes'] }}</li>
+        <li>No: {{ answers['daddy']['no'] }}</li>
+        <li>Not sure: {{ answers['daddy']['not-sure'] }}</li>
+    </ul>
+
+    {% if not voted %}
+    <a href="/change_answers">Change Answers</a>
+    {% else %}
+    <p>You have already voted.</p>
+    {% endif %}
+</body>
+</html>
